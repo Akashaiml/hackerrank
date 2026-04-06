@@ -1,0 +1,80 @@
+/**
+ * Return an array of arrays of size *returnSize.
+ * The sizes of the arrays are returned as *returnColumnSizes array.
+ * Note: Both returned array and *columnSizes array must be malloced, assume caller calls free().
+ */
+
+// Correct comparator for integers
+int comparator(const void* a, const void* b) {
+    return (*(int*)a - *(int*)b);
+}
+
+int** subsetsWithDup(int* a, int n, int* returnSize, int** returnColumnSizes) {
+    unsigned int i = 0, j = 0, l = 0;
+    unsigned int rows = 1 << n;  // 2^n subsets
+    int* ans = malloc(sizeof(int) * rows);  // store sizes of each subset
+    int** result = malloc(sizeof(int*) * rows);  // array of pointers to subsets
+
+    // Sort input to ensure consistent subset generation (helps identify duplicates)
+    qsort(a, n, sizeof(int), comparator);
+
+    for (i = 0; i < rows; i++) {
+        int set_bits_count = 0;
+        int temp = i;
+
+        // Count number of set bits (subset size)
+        while (temp) {
+            temp = temp & (temp - 1);
+            set_bits_count++;
+        }
+
+        if (set_bits_count == 0) {
+            result[l] = malloc(sizeof(int));  // empty set
+            result[l][0] = 0;
+            ans[l] = 0;
+            l++;
+        } else {
+            result[l] = malloc(sizeof(int) * set_bits_count);
+            int k = 0;
+
+            // Generate subset based on bitmask
+            for (j = 0; j < n; j++) {
+                if ((unsigned)i & ((unsigned)1 << j)) {
+                    result[l][k++] = a[j];
+                }
+            }
+
+            // Sort current subset for reliable comparison
+            qsort(result[l], k, sizeof(int), comparator);
+
+            // Check if this subset is a duplicate
+            int isDuplicate = 0;
+            for (int p = 0; p < l; p++) {
+                if (ans[p] == k) {
+                    int match = 1;
+                    for (int m = 0; m < k; m++) {
+                        if (result[p][m] != result[l][m]) {
+                            match = 0;
+                            break;
+                        }
+                    }
+                    if (match) {
+                        isDuplicate = 1;
+                        break;
+                    }
+                }
+            }
+
+            if (!isDuplicate) {
+                ans[l] = k;  // store subset size
+                l++;
+            } else {
+                free(result[l]);  // remove duplicate subset
+            }
+        }
+    }
+
+    *returnSize = l;
+    *returnColumnSizes = ans;
+    return result;
+}
